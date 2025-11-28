@@ -57,10 +57,17 @@
     const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
     const wsUrl = wsScheme + '://' + window.location.host + '/ws/chat/' + roomId + '/';
     
+    // Store current room ID globally for navbar badge
+    window.currentChatRoomId = roomId;
+    
     let chatSocket = new WebSocket(wsUrl);
     
     chatSocket.onopen = function(e) {
         console.log('Chat WebSocket connected');
+        // Update navbar badge excluding this room
+        if (typeof updateChatCount === 'function') {
+            updateChatCount();
+        }
     };
     
     chatSocket.onmessage = function(e) {
@@ -69,8 +76,10 @@
         if (data.type === 'chat_message') {
             appendMessage(data.sender, data.sender_name, data.message);
         } else if (data.type === 'unread_update') {
-            // This will trigger the navbar to update
-            // The base.html listener will handle it
+            // Update navbar badge when message received
+            if (typeof updateChatCount === 'function') {
+                updateChatCount();
+            }
         }
     };
     
@@ -80,6 +89,7 @@
     
     chatSocket.onclose = function(e) {
         console.log('Chat WebSocket closed');
+        window.currentChatRoomId = null; // Clear when disconnected
         if (e.code !== 1000) {
             setTimeout(() => {
                 console.log('Attempting to reconnect...');

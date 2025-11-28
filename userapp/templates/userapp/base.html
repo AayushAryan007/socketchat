@@ -95,6 +95,8 @@
     
     {% if user.is_authenticated %}
     <script>
+        const isOnChatPage = "{{ request.resolver_match.url_name }}" === "chat_room";
+        
         // WebSocket for real-time notifications
         const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
         const notificationSocket = new WebSocket(
@@ -119,7 +121,6 @@
         
         notificationSocket.onclose = function(e) {
             console.log('Notification WebSocket closed');
-            // Attempt reconnect after 3 seconds
             setTimeout(() => {
                 location.reload();
             }, 3000);
@@ -141,12 +142,20 @@
                 .catch(error => console.error('Error fetching notification count:', error));
         }
         
-        // Update chat unread count
+        // Update chat unread count (excluding current room if on chat page)
         function updateChatCount() {
-            fetch('/chat/unread-count/')
+            const badge = document.getElementById('chat-count');
+            if (!badge) return; // Badge might not exist on some pages
+            
+            // Get current room ID if on chat page
+            let url = '/chat/unread-count/';
+            if (window.currentChatRoomId) {
+                url += '?exclude_room=' + window.currentChatRoomId;
+            }
+            
+            fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    const badge = document.getElementById('chat-count');
                     if (data.count > 0) {
                         badge.textContent = data.count;
                         badge.style.display = 'inline';

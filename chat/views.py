@@ -42,14 +42,20 @@ def chat_room(request, username):
     return render(request, 'chat/chat_room.html', {
         'room': room,
         'friend': friend,
-        'messages': messages
+        'messages': messages,
+        'current_room_id': room.id  # Pass this to template
     })
 
 @login_required
 def unread_count(request):
-    """API endpoint to get total unread message count"""
+    """API endpoint to get total unread message count, excluding current room"""
+    current_room_id = request.GET.get('exclude_room')  # Get room to exclude
+    
     total_unread = 0
     for room in request.user.chat_rooms.all():
+        # Skip the currently open chat room
+        if current_room_id and str(room.id) == current_room_id:
+            continue
         total_unread += room.unread_count_for_user(request.user)
     
     return JsonResponse({'count': total_unread})
