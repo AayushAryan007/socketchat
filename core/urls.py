@@ -24,7 +24,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', RedirectView.as_view(url='/user/login/', permanent=False), name='home'),
     path('user/', include('userapp.urls')),
-    # Add other app URLs here
+    path('posts/', include('posts.urls')),
 ]
 
 if settings.DEBUG:

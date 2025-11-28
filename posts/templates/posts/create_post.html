@@ -1,0 +1,39 @@
+{% extends 'userapp/base.html' %}
+
+{% block title %}Create Post - Social Chat App{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-body p-5">
+                <h2 class="mb-4"><i class="fas fa-plus-circle"></i> Create New Post</h2>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">What's on your mind?</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Add Photos/Videos (Optional)</label>
+                        <input type="file" name="media_files" class="form-control" multiple accept="image/*,video/*">
+                        <small class="text-muted">You can select multiple files. Supported formats: JPG, PNG, GIF, MP4, AVI, MOV</small>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Post
+                        </button>
+                        <a href="{% url 'feed' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
