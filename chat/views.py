@@ -27,6 +27,7 @@ def chat_room(request, username):
     room = ChatRoom.get_or_create_room(request.user, friend)
     messages = room.messages.all()
     
+    # Don't use Django messages for chat
     return render(request, 'chat/chat_room.html', {
         'room': room,
         'friend': friend,
