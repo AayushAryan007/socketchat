@@ -165,7 +165,7 @@
                                     {% else %}
                                         <img src="https://via.placeholder.com/40" alt="Avatar" class="rounded-circle me-3" width="40" height="40">
                                     {% endif %}
-                                    <div class="flex-grow-1">
+                                    <div class="grow">
                                         <h6 class="mb-1">
                                             <a href="{% url 'profile' comment.author.username %}" class="text-decoration-none">
                                                 {{ comment.author.get_full_name }}

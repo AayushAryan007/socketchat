@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Post, PostMedia, Comment
+from .models import Post, PostMedia, Comment, Notification
 
 class PostMediaInline(admin.TabularInline):
     model = PostMedia
@@ -17,3 +17,9 @@ class CommentAdmin(admin.ModelAdmin):
     list_display = ['author', 'post', 'text', 'created_at']
     list_filter = ['created_at']
     search_fields = ['text', 'author__username']
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ['recipient', 'sender', 'notification_type', 'is_read', 'created_at']
+    list_filter = ['notification_type', 'is_read', 'created_at']
+    search_fields = ['recipient__username', 'sender__username']

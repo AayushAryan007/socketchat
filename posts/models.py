@@ -51,3 +51,36 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.author.username} on {self.post}"
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('follow', 'Follow'),
+        ('like', 'Like'),
+        ('comment', 'Comment'),
+        ('friend', 'Friend'),
+    ]
+    
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_notifications')
+    notification_type = models.CharField(max_length=10, choices=NOTIFICATION_TYPES)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.sender.username} {self.notification_type} - {self.recipient.username}"
+    
+    def get_message(self):
+        if self.notification_type == 'follow':
+            return f"{self.sender.get_full_name()} started following you"
+        elif self.notification_type == 'like':
+            return f"{self.sender.get_full_name()} liked your post"
+        elif self.notification_type == 'comment':
+            return f"{self.sender.get_full_name()} commented on your post"
+        elif self.notification_type == 'friend':
+            return f"You and {self.sender.get_full_name()} are now friends"
+        return ""

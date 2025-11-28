@@ -1,0 +1,79 @@
+{% extends 'userapp/base.html' %}
+
+{% block title %}Notifications - Social Chat App{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-8 offset-md-2">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h4><i class="fas fa-bell"></i> Notifications</h4>
+                <p class="text-muted">Stay updated with your social activity</p>
+            </div>
+        </div>
+
+        {% if notifications %}
+            {% for notification in notifications %}
+            <div class="card mb-3 {% if not notification.is_read %}border-primary{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex align-items-start">
+                        {% if notification.sender.profile.avatar %}
+                            <img src="{{ notification.sender.profile.avatar.url }}" alt="Avatar" class="rounded-circle me-3" width="50" height="50" style="object-fit: cover;">
+                        {% else %}
+                            <img src="https://via.placeholder.com/50" alt="Avatar" class="rounded-circle me-3" width="50" height="50">
+                        {% endif %}
+                        <div class="grow">
+                            <div class="d-flex align-items-center mb-2">
+                                {% if notification.notification_type == 'follow' %}
+                                    <i class="fas fa-user-plus text-primary me-2"></i>
+                                {% elif notification.notification_type == 'like' %}
+                                    <i class="fas fa-heart text-danger me-2"></i>
+                                {% elif notification.notification_type == 'comment' %}
+                                    <i class="fas fa-comment text-success me-2"></i>
+                                {% elif notification.notification_type == 'friend' %}
+                                    <i class="fas fa-user-friends text-info me-2"></i>
+                                {% endif %}
+                                <strong>{{ notification.get_message }}</strong>
+                            </div>
+                            
+                            {% if notification.post %}
+                                <p class="text-muted mb-2">
+                                    <small>"{{ notification.post.description|truncatewords:15 }}"</small>
+                                </p>
+                            {% endif %}
+                            
+                            {% if notification.comment %}
+                                <p class="text-muted mb-2">
+                                    <small><i class="fas fa-quote-left"></i> {{ notification.comment.text|truncatewords:20 }}</small>
+                                </p>
+                            {% endif %}
+                            
+                            <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                        </div>
+                        <div class="ms-3">
+                            {% if notification.notification_type == 'follow' or notification.notification_type == 'friend' %}
+                                <a href="{% url 'profile' notification.sender.username %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-user"></i> View Profile
+                                </a>
+                            {% elif notification.post %}
+                                <a href="{% url 'post_detail' notification.post.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> View Post
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <h5>No notifications yet</h5>
+                    <p class="text-muted">When someone interacts with you, you'll see it here</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

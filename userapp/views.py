@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from .forms import SignUpForm, UserUpdateForm, ProfileUpdateForm
 from .models import UserProfile
+from posts.models import Notification
 
 def signup_view(request):
     if request.method == 'POST':
@@ -50,18 +51,14 @@ def logout_view(request):
 
 @login_required
 def profile_view(request, username=None):
-    if username:
-        user = get_object_or_404(User, username=username)
-    else:
-        user = request.user
-    
+    user = get_object_or_404(User, username=username) if username else request.user
     profile = user.profile
     is_own_profile = (request.user == user)
     is_following = False
-    
+
     if request.user.is_authenticated and not is_own_profile:
         is_following = profile.is_following(request.user)
-    
+
     context = {
         'profile_user': user,
         'profile': profile,
@@ -119,11 +116,51 @@ def follow_user(request, username):
     if user_to_follow != request.user:
         profile = user_to_follow.profile
         if profile.is_following(request.user):
+            # Unfollow
             profile.followers.remove(request.user)
             messages.success(request, f'You unfollowed {username}.')
+            # Delete follow notification
+            Notification.objects.filter(
+                recipient=user_to_follow,
+                sender=request.user,
+                notification_type='follow'
+            ).delete()
+            # Delete friend notification if exists
+            Notification.objects.filter(
+                recipient=request.user,
+                sender=user_to_follow,
+                notification_type='friend'
+            ).delete()
+            Notification.objects.filter(
+                recipient=user_to_follow,
+                sender=request.user,
+                notification_type='friend'
+            ).delete()
         else:
+            # Follow
             profile.followers.add(request.user)
             messages.success(request, f'You are now following {username}.')
+            
+            # Create follow notification
+            Notification.objects.create(
+                recipient=user_to_follow,
+                sender=request.user,
+                notification_type='follow'
+            )
+            
+            # Check if they're now friends (both following each other)
+            if request.user.profile.is_following(user_to_follow):
+                # Create friend notifications for both users
+                Notification.objects.get_or_create(
+                    recipient=request.user,
+                    sender=user_to_follow,
+                    notification_type='friend'
+                )
+                Notification.objects.get_or_create(
+                    recipient=user_to_follow,
+                    sender=request.user,
+                    notification_type='friend'
+                )
     
     return redirect('profile', username=username)
 
