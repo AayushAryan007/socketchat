@@ -65,9 +65,10 @@
                             <i class="fas fa-sign-out-alt"></i> Logout
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item notification-badge">
                         <a class="nav-link" href="{% url 'chat_list' %}">
                             <i class="fas fa-comments"></i> Chat
+                            <span class="badge bg-danger" id="chat-count" style="display: none;"></span>
                         </a>
                     </li>
                 </ul>
@@ -109,11 +110,28 @@
                 });
         }
         
+        // Update chat unread count
+        function updateChatCount() {
+            fetch('/chat/unread-count/')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('chat-count');
+                    if (data.count > 0) {
+                        badge.textContent = data.count;
+                        badge.style.display = 'inline';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                });
+        }
+        
         // Update on page load
         updateNotificationCount();
+        updateChatCount();
         
         // Update every 30 seconds
         setInterval(updateNotificationCount, 30000);
+        setInterval(updateChatCount, 30000);
     </script>
     {% endif %}
     
