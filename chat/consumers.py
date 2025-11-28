@@ -18,6 +18,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
 
         self.room_group_name = f'chat_{self.room_id}'
+        self.user = user
 
         room = await self.get_room()
         if not room:
@@ -32,16 +33,40 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
+        
+        # Join user's personal notification group
+        self.user_group_name = f'user_{user.id}_notifications'
+        await self.channel_layer.group_add(
+            self.user_group_name,
+            self.channel_name
+        )
+        
         await self.accept()
         
         # Mark messages as read when user connects
         await self.mark_messages_read(user)
+        
+        # Notify other user to update their unread count
+        other_user = await self.get_other_user(room, user)
+        if other_user:
+            await self.channel_layer.group_send(
+                f'user_{other_user.id}_notifications',
+                {
+                    'type': 'unread_update',
+                    'action': 'refresh'
+                }
+            )
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
+        if hasattr(self, 'user_group_name'):
+            await self.channel_layer.group_discard(
+                self.user_group_name,
+                self.channel_name
+            )
 
     async def receive(self, text_data):
         try:
@@ -56,6 +81,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         user = self.scope["user"]
         msg = await self.save_message(user, message_text)
 
+        # Send message to room group
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -66,13 +92,33 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'timestamp': msg.timestamp.isoformat()
             }
         )
+        
+        # Notify other user to update unread count
+        room = await self.get_room()
+        other_user = await self.get_other_user(room, user)
+        if other_user:
+            await self.channel_layer.group_send(
+                f'user_{other_user.id}_notifications',
+                {
+                    'type': 'unread_update',
+                    'action': 'increment'
+                }
+            )
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps({
+            'type': 'chat_message',
             'message': event['message'],
             'sender': event['sender'],
             'sender_name': event['sender_name'],
             'timestamp': event['timestamp']
+        }))
+
+    async def unread_update(self, event):
+        """Handle unread count updates"""
+        await self.send(text_data=json.dumps({
+            'type': 'unread_update',
+            'action': event['action']
         }))
 
     @database_sync_to_async
@@ -101,3 +147,39 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """Mark all messages in this room as read for the user"""
         room = ChatRoom.objects.get(id=self.room_id)
         room.messages.filter(is_read=False).exclude(sender=user).update(is_read=True)
+    
+    @database_sync_to_async
+    def get_other_user(self, room, current_user):
+        """Get the other user in the chat room"""
+        users = room.users.exclude(id=current_user.id)
+        return users.first() if users.exists() else None
+
+
+class NotificationConsumer(AsyncWebsocketConsumer):
+    """Consumer for global notifications (navbar updates)"""
+    async def connect(self):
+        user = self.scope["user"]
+        if not user.is_authenticated:
+            await self.close(code=4401)
+            return
+        
+        self.user_group_name = f'user_{user.id}_notifications'
+        
+        await self.channel_layer.group_add(
+            self.user_group_name,
+            self.channel_name
+        )
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(
+            self.user_group_name,
+            self.channel_name
+        )
+
+    async def unread_update(self, event):
+        """Send unread count update to client"""
+        await self.send(text_data=json.dumps({
+            'type': 'unread_update',
+            'action': event['action']
+        }))

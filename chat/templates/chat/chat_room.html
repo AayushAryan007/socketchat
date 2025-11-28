@@ -60,22 +60,27 @@
     let chatSocket = new WebSocket(wsUrl);
     
     chatSocket.onopen = function(e) {
-        console.log('WebSocket connected');
+        console.log('Chat WebSocket connected');
     };
     
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
-        appendMessage(data.sender, data.sender_name, data.message);
+        
+        if (data.type === 'chat_message') {
+            appendMessage(data.sender, data.sender_name, data.message);
+        } else if (data.type === 'unread_update') {
+            // This will trigger the navbar to update
+            // The base.html listener will handle it
+        }
     };
     
     chatSocket.onerror = function(e) {
-        console.error('WebSocket error:', e);
+        console.error('Chat WebSocket error:', e);
     };
     
     chatSocket.onclose = function(e) {
-        console.log('WebSocket closed');
+        console.log('Chat WebSocket closed');
         if (e.code !== 1000) {
-            // Attempt reconnect
             setTimeout(() => {
                 console.log('Attempting to reconnect...');
                 location.reload();
