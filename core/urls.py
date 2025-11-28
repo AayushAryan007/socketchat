@@ -18,13 +18,19 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.generic import RedirectView
+from django.shortcuts import redirect
+
+def home_redirect(request):
+    if request.user.is_authenticated:
+        return redirect('feed')
+    return redirect('login')
 
 urlpatterns = [
+    path('', home_redirect, name='home'),
     path('admin/', admin.site.urls),
-    path('', RedirectView.as_view(url='/user/login/', permanent=False), name='home'),
     path('user/', include('userapp.urls')),
     path('posts/', include('posts.urls')),
+    path('chat/', include('chat.urls')),
 ]
 
 if settings.DEBUG:
