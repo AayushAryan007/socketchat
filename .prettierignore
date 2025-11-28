@@ -1,0 +1,8 @@
+# Ignore all HTML files
+*.html
+
+# Ignore templates directory
+**/templates/**
+
+# Ignore static files
+**/static/**
